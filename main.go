@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"strconv"
+	"time"
 )
 
 type MoneyType struct {
@@ -51,7 +53,7 @@ func main() {
 	writer := csv.NewWriter(csvFile)
 	defer writer.Flush()
 
-	header := []string{"Date", "Total"}
+	header := []string{"date", "value"}
 	if err := writer.Write(header); err != nil {
 		fmt.Println(err)
 	}
@@ -60,7 +62,14 @@ func main() {
 		fmt.Printf("%+v\n", data.SalesAndTrafficByDate[i])
 
 		record := data.SalesAndTrafficByDate[i]
-		row := []string{record.Date, strconv.Itoa(record.SalesByDate.UnitsOrdered)}
+
+		parsedDate, err := time.Parse("1/2/2006", record.Date)
+		if err != nil {
+			log.Fatalf("Error parsing date: %s", err)
+		}
+		formattedDate := parsedDate.Format("2006-01-02")
+
+		row := []string{formattedDate, strconv.Itoa(record.SalesByDate.UnitsOrdered)}
 		if err := writer.Write(row); err != nil {
 			fmt.Println(err)
 		}
