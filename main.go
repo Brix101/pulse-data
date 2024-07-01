@@ -74,4 +74,7 @@ func main() {
 	for _, record := range data.SalesAndTrafficByDate {
 		ch <- []string{record.Date, fmt.Sprintf("%f", record.SalesByDate.OrderedProductSales.Amount)}
 	}
+
+	close(ch)
+	wg.Wait()
 }
