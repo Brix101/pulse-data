@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strconv"
+	"sync"
 )
 
 type MoneyType struct {
@@ -29,7 +29,6 @@ type Data struct {
 }
 
 func main() {
-	fmt.Println("Hello World")
 	jsonFile, err := os.Open("data.json")
 	if err != nil {
 		fmt.Println(err)
@@ -56,16 +55,23 @@ func main() {
 		fmt.Println(err)
 	}
 
-	for i := 0; i < len(data.SalesAndTrafficByDate); i++ {
-		fmt.Printf("%+v\n", data.SalesAndTrafficByDate[i])
+	ch := make(chan []string, len(data.SalesAndTrafficByDate))
 
-		record := data.SalesAndTrafficByDate[i]
-		row := []string{record.Date, strconv.Itoa(record.SalesByDate.UnitsOrdered)}
-		if err := writer.Write(row); err != nil {
-			fmt.Println(err)
-		}
+	var wg sync.WaitGroup
+
+	for i := 0; i < 4; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for row := range ch {
+				if err := writer.Write(row); err != nil {
+					fmt.Println(err)
+				}
+			}
+		}()
 	}
 
-	fmt.Println("CSV file created successfully")
-
+	for _, record := range data.SalesAndTrafficByDate {
+		ch <- []string{record.Date, fmt.Sprintf("%f", record.SalesByDate.OrderedProductSales.Amount)}
+	}
 }
